@@ -51,7 +51,7 @@ questions/technical/<slug>.json, questions/behavioral/<slug>.json
                         did not draft it and checked facts against official docs or papers; page included) may move from `todo`
                         to `in_progress`; never to `done`.** `in_progress` questions are served and scored like `done` ones.
 questions/topics/<topic>.json
-                        "New idea" intro cards per tier (CONTRIBUTING.md "Topic intros"). Same status rules.
+                        one small file per station, `{ status, learn? }` (CONTRIBUTING.md "Topic files"). Same status rules.
 scripts/catalog.mjs     load + validate (mirrors the app's importer — change both together)
 scripts/check.mjs       validate everything
 scripts/build-readme.mjs  generate README.md (--check in CI)

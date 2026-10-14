@@ -46,18 +46,16 @@ const STAGE_KEYS = ["title", "passCriteria", "resources", "extras"];
 // questions/technical/*.json and questions/behavioral/*.json: interview questions (app spec
 // 2026-10-05-interview-and-challenge-design.md §4.3). Same lists as the app's format.go.
 export const QUESTION_KINDS = ["technical", "behavioral", "situational"];
-// The 27 curriculum topics, in curriculum order (stage, then left to right). Same list as the app's
-// QuestionTopics (backend/internal/catalog/curriculum.go).
+// The 22 interview stations, in curriculum order (stage, then left to right). Same list as the app's
+// QuestionTopics (backend/internal/catalog/curriculum.go). Topic files (questions/topics/*.json) exist only for these.
 export const TOPICS = [
-  "how-models-learn", "pytorch-basics", "math-notation", "linear-algebra", "calculus",
-  "probability-statistics", "python-numpy", "ml-fundamentals", "data-generalization",
-  "system-design-basics", "deep-learning", "embeddings", "sequence-models", "computer-vision",
-  "classical-vision", "llm-internals", "fine-tuning", "inference-gpu", "inference-gpu-advanced",
-  "multimodal", "generative-models", "rag", "agents", "evaluation", "safety", "ai-system-design",
-  "system-design",
+  "problem-framing", "implementation-debugging", "data-leakage", "ml-evaluation", "generalization-drift",
+  "statistics-experimentation", "dl-architectures", "training-optimization", "embeddings-ranking",
+  "ml-system-design", "visual-perception", "vision-3d", "generative-models", "llm-internals", "fine-tuning",
+  "inference-serving", "prompt-context", "rag", "agents", "genai-evaluation", "ai-security", "multimodal",
 ];
-// Topics whose page round has no codefill: the code is the topic itself, so a blank would leak or be a quiz on syntax.
-export const NO_CODEFILL_TOPICS = ["python-numpy", "pytorch-basics"];
+// A question that belongs to no station (Academy lesson practice). Valid as `topic`, never counted in a station.
+export const ACADEMY_TOPIC = "academy";
 export const TIERS = ["concept", "mechanism", "trade-off", "boss"];
 export const THEMES = ["conflict", "failure", "ownership", "ambiguity", "fast-learning", "influence"];
 // Amazon's 16 Leadership Principles, spelled exactly as in companies/amazon.json.
@@ -70,10 +68,22 @@ export const LEADERSHIP_PRINCIPLES = [
 // A Challenge tier needs at least this many questions so a retry can draw a new one.
 // Fewer is a warning, not an error: the app just doesn't open that topic yet.
 export const MIN_PER_TIER = 3;
-const TECHNICAL_KEYS = new Set(["kind", "topic", "tier", "prompt", "keyPoints", "levels", "skills", "source", "status", "page"]);
+const TECHNICAL_KEYS = new Set([
+  "kind", "topic", "tier", "prompt", "keyPoints", "levels", "skills", "source", "status", "page",
+  "secondaryTopics", "assessedSkills", "followUpProbes", "learn",
+]);
 const BEHAVIORAL_KEYS = new Set(["kind", "theme", "leadershipPrinciples", "prompt", "levels", "source", "status"]);
 const LEVEL_KEYS = ["weak", "adequate", "strong"];
-const SOURCE_KEYS = new Set(["label", "url"]);
+const SOURCE_KEYS = new Set(["label", "url", "type", "evidence"]);
+export const SOURCE_TYPES = ["official-guide", "firsthand-report", "interviewer-guide", "book", "job-description", "authored"];
+export const SOURCE_EVIDENCE = ["A", "B", "C", "D"];
+const KEY_POINT_KEYS = new Set(["text", "critical", "remediationLevel"]);
+// At most 2 critical key points per question, and a question with any needs at least 3 key points.
+const MAX_CRITICAL = 2;
+const MIN_POINTS_WITH_CRITICAL = 3;
+// <topic>.<tier>.<n>: n is 1-6, the sub-skills of a station's tier in the question blueprint.
+const ASSESSED_SKILL = /^([a-z0-9-]+)\.([a-z-]+)\.([1-6])$/;
+const LESSON_CODE = /^[A-Z]\d{2}$/;
 
 const SLUG = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const isURL = (u) => typeof u === "string" && /^https?:\/\//.test(u);
@@ -217,14 +227,15 @@ export function validateQuestions(questions, skills) {
     } else {
       const extraSrc = Object.keys(src).filter((k) => !SOURCE_KEYS.has(k));
       if (extraSrc.length) problems.push(`${at}: unknown source field(s) ${extraSrc.join(", ")}`);
+      if (Object.hasOwn(src, "type") && !SOURCE_TYPES.includes(src.type)) problems.push(`${at}: source.type must be one of ${SOURCE_TYPES.join(", ")}`);
+      if (Object.hasOwn(src, "evidence") && !SOURCE_EVIDENCE.includes(src.evidence)) problems.push(`${at}: source.evidence must be one of ${SOURCE_EVIDENCE.join(", ")}`);
     }
     if (!STATUSES.includes(data.status)) problems.push(`${at}: status must be one of ${STATUSES.join(", ")}`);
     if (technical) {
-      if (!TOPICS.includes(data.topic)) problems.push(`${at}: topic must be one of ${TOPICS.join(", ")}`);
+      if (!TOPICS.includes(data.topic) && data.topic !== ACADEMY_TOPIC) problems.push(`${at}: topic must be one of ${TOPICS.join(", ")}, ${ACADEMY_TOPIC}`);
       if (!TIERS.includes(data.tier)) problems.push(`${at}: tier must be one of ${TIERS.join(", ")}`);
-      if (!Array.isArray(data.keyPoints) || data.keyPoints.length === 0 || data.keyPoints.some(blank)) {
-        problems.push(`${at}: keyPoints needs at least one non-blank item`);
-      }
+      problems.push(...validateKeyPoints(data.keyPoints, at));
+      problems.push(...validateTechnicalExtras(data, at));
       if (!Array.isArray(data.skills) || data.skills.length < 1 || data.skills.length > MAX_SKILLS) {
         problems.push(`${at}: skills needs 1 to ${MAX_SKILLS} items`);
       } else {
@@ -234,9 +245,6 @@ export function validateQuestions(questions, skills) {
       // The app serves in_progress and done questions, so they need their page; todo is still a draft.
       if (Object.hasOwn(data, "page")) {
         problems.push(...validatePage(data.page, at));
-        if (data.page?.type === "codefill" && NO_CODEFILL_TOPICS.includes(data.topic)) {
-          problems.push(`${at}: ${data.topic} has no codefill pages (${NO_CODEFILL_TOPICS.join(", ")} do not use them)`);
-        }
       }
       else if (SERVED.includes(data.status)) problems.push(`${at}: ${data.status} questions need a page`);
     } else {
@@ -245,6 +253,73 @@ export function validateQuestions(questions, skills) {
       if (!Array.isArray(lps)) problems.push(`${at}: leadershipPrinciples must be a list (can be empty)`);
       else for (const lp of lps) if (!LEADERSHIP_PRINCIPLES.includes(lp)) problems.push(`${at}: "${lp}" is not one of Amazon's Leadership Principles`);
     }
+  }
+  return problems;
+}
+
+/** keyPoints: a non-blank string, or { text, critical?, remediationLevel? }. Same rules as the app's ValidateQuestions. */
+function validateKeyPoints(keyPoints, at) {
+  const problems = [];
+  if (!Array.isArray(keyPoints) || keyPoints.length === 0) return [`${at}: keyPoints needs at least one non-blank item`];
+  let critical = 0;
+  for (const kp of keyPoints) {
+    if (typeof kp === "string") {
+      if (blank(kp)) problems.push(`${at}: keyPoints must not contain a blank item`);
+      continue;
+    }
+    if (!isObject(kp)) {
+      problems.push(`${at}: each keyPoint must be a string or { text, critical?, remediationLevel? }`);
+      continue;
+    }
+    const extra = Object.keys(kp).filter((k) => !KEY_POINT_KEYS.has(k));
+    if (extra.length) problems.push(`${at}: unknown keyPoint field(s) ${extra.join(", ")}`);
+    if (blank(kp.text)) problems.push(`${at}: keyPoint text must not be blank`);
+    if (Object.hasOwn(kp, "critical") && typeof kp.critical !== "boolean") problems.push(`${at}: keyPoint critical must be true or false`);
+    if (kp.critical === true) critical++;
+    if (Object.hasOwn(kp, "remediationLevel") && !TIERS.includes(kp.remediationLevel)) {
+      problems.push(`${at}: keyPoint remediationLevel must be one of ${TIERS.join(", ")}`);
+    }
+  }
+  if (critical > MAX_CRITICAL) problems.push(`${at}: at most ${MAX_CRITICAL} critical keyPoints (got ${critical})`);
+  if (critical > 0 && keyPoints.length < MIN_POINTS_WITH_CRITICAL) {
+    problems.push(`${at}: a question with a critical keyPoint needs at least ${MIN_POINTS_WITH_CRITICAL} keyPoints`);
+  }
+  return problems;
+}
+
+/** secondaryTopics, assessedSkills, followUpProbes, learn: all optional. */
+function validateTechnicalExtras(data, at) {
+  const problems = [];
+  if (Object.hasOwn(data, "secondaryTopics")) {
+    const st = data.secondaryTopics;
+    if (!Array.isArray(st)) problems.push(`${at}: secondaryTopics must be a list of station slugs`);
+    else {
+      for (const t of st) {
+        if (!TOPICS.includes(t)) problems.push(`${at}: secondaryTopics "${t}" is not a station (${TOPICS.join(", ")})`);
+        else if (t === data.topic) problems.push(`${at}: secondaryTopics must not contain the question's own topic`);
+      }
+    }
+  }
+  if (Object.hasOwn(data, "assessedSkills")) {
+    const as = data.assessedSkills;
+    if (!Array.isArray(as)) problems.push(`${at}: assessedSkills must be a list of <topic>.<tier>.<n>`);
+    else {
+      for (const id of as) {
+        const m = typeof id === "string" ? ASSESSED_SKILL.exec(id) : null;
+        if (!m || !TOPICS.includes(m[1]) || !TIERS.includes(m[2])) {
+          problems.push(`${at}: assessedSkills "${id}" must be <station>.<tier>.<1-6>`);
+        }
+      }
+    }
+  }
+  if (Object.hasOwn(data, "followUpProbes")) {
+    const fp = data.followUpProbes;
+    if (!Array.isArray(fp) || fp.length < 2 || fp.length > 4 || fp.some(blank)) {
+      problems.push(`${at}: followUpProbes needs 2 to 4 non-blank sentences`);
+    }
+  }
+  if (Object.hasOwn(data, "learn") && !(typeof data.learn === "string" && LESSON_CODE.test(data.learn))) {
+    problems.push(`${at}: learn must be an Academy lesson code like A05`);
   }
   return problems;
 }
@@ -258,7 +333,7 @@ export const PAGE_TYPES = ["choose", "multi", "truefalse", "lines", "fill", "cod
 export const LOCALES = ["zh-Hant", "ja"];
 // One Challenge page round is 5 questions, so a topic × tier needs 5 page-usable ones.
 export const MIN_PAGE_PER_TIER = 5;
-// Statuses whose questions (and topic intros) the app serves. A technical question in one of
+// Statuses whose questions (and topic files) the app serves. A technical question in one of
 // these must carry a page.
 const SERVED = ["in_progress", "done"];
 const PAGE_COMMON_KEYS = ["type", "prompt", "hint", "why", "concept", "i18n"];
@@ -639,11 +714,11 @@ function checkPageI18n(page, bad) {
 }
 
 // ---------------------------------------------------------------------------
-// Topic intros: questions/topics/<topic>.json, the "New idea" card for each tier.
+// Topic files: questions/topics/<topic>.json is { status, learn? }, one per station (never `academy`).
 
-const TOPIC_KEYS = ["status", "intros", "i18n"];
+const TOPIC_KEYS = ["status", "learn"];
 
-/** Validate topic intro files, each { topic (from the file name), status, intros, i18n? }. */
+/** Validate topic files, each { topic (from the file name), status, learn? }. */
 export function validateTopics(topics) {
   const problems = [];
   for (const t of topics) {
@@ -654,49 +729,8 @@ export function validateTopics(topics) {
     const extra = Object.keys(data).filter((k) => !TOPIC_KEYS.includes(k));
     if (extra.length) bad(`unknown field(s) ${extra.join(", ")}`);
     if (!STATUSES.includes(data.status)) bad(`status must be one of ${STATUSES.join(", ")}`);
-    if (!isObject(data.intros)) bad(`intros needs ${TIERS.join(", ")}`);
-    else {
-      for (const tier of TIERS) {
-        const intro = data.intros[tier];
-        if (!isObject(intro)) {
-          bad(`intros.${tier} is missing`);
-          continue;
-        }
-        const ex = Object.keys(intro).filter((k) => !CONCEPT_KEYS.includes(k));
-        if (ex.length) bad(`intros.${tier}: unknown field(s) ${ex.join(", ")}`);
-        for (const k of CONCEPT_KEYS) if (blank(intro[k])) bad(`intros.${tier}.${k} must not be blank`);
-      }
-      const exTiers = Object.keys(data.intros).filter((k) => !TIERS.includes(k));
-      if (exTiers.length) bad(`intros: unknown tier(s) ${exTiers.join(", ")}`);
-    }
-    if (Object.hasOwn(data, "i18n")) {
-      if (!isObject(data.i18n)) bad("i18n must be an object of locales");
-      else {
-        for (const [locale, tr] of Object.entries(data.i18n)) {
-          if (!LOCALES.includes(locale)) {
-            bad(`i18n: unknown locale "${locale}" (use ${LOCALES.join(", ")})`);
-            continue;
-          }
-          if (!isObject(tr)) {
-            bad(`i18n.${locale} must be an object`);
-            continue;
-          }
-          for (const [tier, v] of Object.entries(tr)) {
-            const fat = `i18n.${locale}.${tier}`;
-            if (!TIERS.includes(tier)) {
-              bad(`i18n.${locale}: unknown tier "${tier}"`);
-              continue;
-            }
-            if (!isObject(v)) {
-              bad(`${fat} must be {title, body}`);
-              continue;
-            }
-            const ex = Object.keys(v).filter((k) => !CONCEPT_KEYS.includes(k));
-            if (ex.length) bad(`${fat}: unknown field(s) ${ex.join(", ")}`);
-            for (const k of CONCEPT_KEYS) if (Object.hasOwn(v, k) && blank(v[k])) bad(`${fat}.${k} must not be blank`);
-          }
-        }
-      }
+    if (Object.hasOwn(data, "learn") && !(typeof data.learn === "string" && LESSON_CODE.test(data.learn))) {
+      bad("learn must be an Academy lesson code like A05");
     }
   }
   return problems;

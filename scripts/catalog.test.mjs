@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   loadCatalog, validateQuestions, questionCoverage, MIN_PER_TIER,
-  validatePage, normalizeAnswer, TOPICS, pageUsable, validateTopics, PAGE_TYPES, LOCALES, MIN_PAGE_PER_TIER, optionLengthLeaks,
+  validatePage, normalizeAnswer, TOPICS, ACADEMY_TOPIC, pageUsable, validateTopics, PAGE_TYPES, LOCALES, MIN_PAGE_PER_TIER, optionLengthLeaks,
 } from "./catalog.mjs";
 
 const skills = [{ name: "LLMs", description: "Large language models." }];
@@ -14,7 +14,7 @@ const skills = [{ name: "LLMs", description: "Large language models." }];
 function technical(over = {}) {
   return {
     kind: "technical",
-    topic: "inference-gpu",
+    topic: "inference-serving",
     tier: "mechanism",
     prompt: "What is the KV cache, and what are its memory implications at scale?",
     keyPoints: ["Caches K and V per layer", "Memory grows with sequence length and batch"],
@@ -50,6 +50,7 @@ test("every technical rule is enforced", () => {
     "bad slug": [q("KV_cache", "technical", technical())],
     "wrong folder": [q("kv", "behavioral", technical())],
     "unknown topic": [q("kv", "technical", technical({ topic: "coding" }))],
+    "old topic": [q("kv", "technical", technical({ topic: "evaluation" }))],
     "unknown tier": [q("kv", "technical", technical({ tier: "easy" }))],
     "blank prompt": [q("kv", "technical", technical({ prompt: " " }))],
     "no key points": [q("kv", "technical", technical({ keyPoints: [] }))],
@@ -110,9 +111,10 @@ test("coverage counts technical questions per topic and tier, ignoring proposed 
     q("c", "technical", technical({ status: "proposed_removal" })),
     q("d", "behavioral", behavioral()),
   ]);
-  assert.deepEqual(cov.find((c) => c.topic === "inference-gpu" && c.tier === "mechanism"), { topic: "inference-gpu", tier: "mechanism", count: 2, page: 0 });
+  assert.deepEqual(cov.find((c) => c.topic === "inference-serving" && c.tier === "mechanism"), { topic: "inference-serving", tier: "mechanism", count: 2, page: 0 });
   assert.equal(cov.find((c) => c.topic === "rag" && c.tier === "boss").count, 0);
-  assert.equal(cov.length, 27 * 4);
+  assert.equal(cov.length, 22 * 4);
+  assert.ok(!cov.some((c) => c.topic === "academy"), "academy belongs to no station");
   assert.equal(MIN_PER_TIER, 3);
 });
 
@@ -295,39 +297,29 @@ test("coverage counts page-usable questions per topic and tier", () => {
     withPage("choose", () => {}, { status: "todo" }),
     withPage("choose", () => {}, { status: "proposed_removal" }),
   ]);
-  const row = cov.find((c) => c.topic === "inference-gpu" && c.tier === "mechanism");
-  assert.deepEqual(row, { topic: "inference-gpu", tier: "mechanism", count: 3, page: 2 });
+  const row = cov.find((c) => c.topic === "inference-serving" && c.tier === "mechanism");
+  assert.deepEqual(row, { topic: "inference-serving", tier: "mechanism", count: 3, page: 2 });
   assert.equal(MIN_PAGE_PER_TIER, 5);
 });
 
-// Topic intros: questions/topics/<topic>.json.
+// Topic files: questions/topics/<topic>.json is { status, learn? } (no intros, no New idea cards).
 function topicFile(over = {}) {
-  return {
-    topic: "rag",
-    status: "todo",
-    intros: {
-      concept: { title: "Retrieval", body: "Fetch passages, then answer from them." },
-      mechanism: { title: "Chunks", body: "Documents are split and embedded." },
-      "trade-off": { title: "Recall vs. noise", body: "More passages help recall but add noise." },
-      boss: { title: "End to end", body: "Design and evaluate a full pipeline." },
-    },
-    i18n: { "zh-Hant": { concept: { title: "檢索" } }, ja: {} },
-    ...over,
-  };
+  return { topic: "rag", status: "todo", ...over };
 }
 
 test("valid topic file passes", () => {
   assert.deepEqual(validateTopics([topicFile()]), []);
-  const { i18n: _i, ...noI18n } = topicFile();
-  assert.deepEqual(validateTopics([noI18n]), []);
+  assert.deepEqual(validateTopics([topicFile({ learn: "A05" })]), []);
 });
 
 const TOPIC_CASES = {
   "topic file name not a topic": topicFile({ topic: "coding" }),
-  "intros missing tier": topicFile({ intros: { ...topicFile().intros, boss: undefined } }),
-  "intro blank title": topicFile({ intros: { ...topicFile().intros, concept: { title: " ", body: "x" } } }),
+  "topic file name is academy": topicFile({ topic: "academy" }),
+  "topic file old intros": topicFile({ intros: { concept: { title: "t", body: "b" } } }),
+  "topic file old i18n": topicFile({ i18n: {} }),
   "unknown topic key": topicFile({ order: 1 }),
-  "topic i18n unknown tier": topicFile({ i18n: { ja: { easy: { title: "x" } } } }),
+  "topic file bad learn": topicFile({ learn: "a05" }),
+  "topic file bad status": topicFile({ status: "ready" }),
 };
 
 for (const [name, input] of Object.entries(TOPIC_CASES)) {
@@ -339,7 +331,7 @@ for (const [name, input] of Object.entries(TOPIC_CASES)) {
   });
 }
 
-test("loadCatalog reads topic intros and tolerates a catalog without them", () => {
+test("loadCatalog reads topic files and tolerates a catalog without them", () => {
   const root = mkdtempSync(join(tmpdir(), "catalog-"));
   const write = (rel, v) => {
     mkdirSync(join(root, rel, ".."), { recursive: true });
@@ -355,7 +347,7 @@ test("loadCatalog reads topic intros and tolerates a catalog without them", () =
   write("questions/topics/agents.json", { ...rag, topic: "rag" });
   cat = loadCatalog(root);
   assert.deepEqual(cat.topics.map((t) => t.topic), ["agents", "cooking", "rag"]);
-  assert.deepEqual(cat.topics.find((t) => t.topic === "rag").intros, rag.intros);
+  assert.deepEqual(cat.topics.find((t) => t.topic === "rag").status, "todo");
   assert.ok(cat.problems.some((p) => p.startsWith("questions/topics/cooking:")));
   assert.ok(cat.problems.some((p) => p.startsWith("questions/topics/agents:") && p.includes("topic")));
   assert.ok(!cat.problems.some((p) => p.startsWith("questions/topics/rag:")));
@@ -407,25 +399,54 @@ test("optionLengthLeaks checks every locale and the shortest-answer tell", () =>
   assert.deepEqual(optionLengthLeaks([clean]), []);
 });
 
-// The 27 curriculum topics. The app repo keeps a byte-identical testdata/curriculum-topics.json and its
+// The 22 stations. The app repo keeps a byte-identical testdata/curriculum-topics.json and its
 // Go tests use the same case names; neither repo reads the other's source.
 const CURRICULUM = JSON.parse(readFileSync(new URL("./testdata/curriculum-topics.json", import.meta.url), "utf8")).topics;
 
-test("every curriculum topic is a valid question topic and intro file name", () => {
-  assert.equal(CURRICULUM.length, 27);
+test("every curriculum topic is a valid question topic and topic file name", () => {
+  assert.equal(CURRICULUM.length, 22);
   assert.deepEqual(TOPICS, CURRICULUM);
   const questions = CURRICULUM.map((topic) => q(`q-${topic}`, "technical", technical({ topic })));
   assert.deepEqual(validateQuestions(questions, skills), []);
   assert.deepEqual(validateTopics(CURRICULUM.map((topic) => topicFile({ topic }))), []);
 });
 
-for (const topic of ["python-numpy", "pytorch-basics"]) {
-  test(`codefill page in ${topic} is rejected`, () => {
-    const problems = validateQuestions([withPage("codefill", () => {}, { topic })], skills);
-    assert.ok(problems.some((p) => p.includes("no codefill")), `got ${problems}`);
-  });
-}
+test("academy is a valid question topic but not a station", () => {
+  assert.ok(!TOPICS.includes(ACADEMY_TOPIC));
+  assert.deepEqual(validateQuestions([q("lesson", "technical", technical({ topic: "academy" }))], skills), []);
+});
 
-test("codefill page in linear-algebra passes", () => {
-  assert.deepEqual(validateQuestions([withPage("codefill", () => {}, { topic: "linear-algebra" })], skills), []);
+test("codefill is allowed in every station", () => {
+  for (const topic of CURRICULUM) {
+    assert.deepEqual(validateQuestions([withPage("codefill", () => {}, { topic })], skills), [], topic);
+  }
+});
+
+// Shared with the app repo (byte-identical testdata/question-format-cases.json, same case names).
+const FORMAT = JSON.parse(readFileSync(new URL("./testdata/question-format-cases.json", import.meta.url), "utf8"));
+const fromCase = (c) => {
+  const data = { ...FORMAT.base, ...c.set };
+  for (const k of c.unset ?? []) delete data[k];
+  return q("format-case", "technical", data);
+};
+
+test("question format cases: valid", () => {
+  for (const c of FORMAT.valid) {
+    assert.deepEqual(validateQuestions([fromCase(c)], skills), [], `${c.name} should pass`);
+  }
+});
+
+test("question format cases: invalid", () => {
+  for (const c of FORMAT.invalid) {
+    assert.ok(validateQuestions([fromCase(c)], skills).length > 0, `${c.name} should be a problem`);
+  }
+});
+
+test("topic file cases", () => {
+  for (const c of FORMAT.topicFiles.valid) {
+    assert.deepEqual(validateTopics([{ topic: c.topic, ...c.data }]), [], `${c.name} should pass`);
+  }
+  for (const c of FORMAT.topicFiles.invalid) {
+    assert.ok(validateTopics([{ topic: c.topic, ...c.data }]).length > 0, `${c.name} should be a problem`);
+  }
 });

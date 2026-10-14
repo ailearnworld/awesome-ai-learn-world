@@ -1,0 +1,75 @@
+{
+ "base": {
+  "kind": "technical",
+  "topic": "rag",
+  "tier": "mechanism",
+  "prompt": "Why does a RAG pipeline chunk documents before embedding them?",
+  "keyPoints": ["Embedding models have a context limit", "Smaller chunks retrieve more precisely", "Chunk size trades recall against noise"],
+  "levels": { "weak": "Names it only.", "adequate": "Explains the limit.", "strong": "Discusses overlap and size trade-offs." },
+  "skills": ["LLMs"],
+  "source": { "label": "Interviewer-designed practice", "url": "https://example.com/rag" },
+  "status": "todo"
+ },
+ "valid": [
+  { "name": "old plain-string keyPoints", "set": {} },
+  { "name": "topic rag", "set": { "topic": "rag" } },
+  { "name": "topic academy", "set": { "topic": "academy" } },
+  { "name": "keyPoints as objects and strings mixed", "set": { "keyPoints": [{ "text": "a", "critical": true }, { "text": "b", "remediationLevel": "concept" }, "c"] } },
+  { "name": "critical false does not count", "set": { "keyPoints": [{ "text": "a", "critical": false }, { "text": "b", "critical": false }, { "text": "c", "critical": false }, { "text": "d", "critical": true }] } },
+  { "name": "two critical with three key points", "set": { "keyPoints": [{ "text": "a", "critical": true }, { "text": "b", "critical": true }, "c"] } },
+  { "name": "secondaryTopics", "set": { "secondaryTopics": ["embeddings-ranking", "llm-internals"] } },
+  { "name": "assessedSkills", "set": { "assessedSkills": ["rag.mechanism.2", "rag.concept.1", "agents.boss.6"] } },
+  { "name": "followUpProbes 2 sentences", "set": { "tier": "trade-off", "followUpProbes": ["What if the corpus doubles?", "How would you measure it?"] } },
+  { "name": "followUpProbes 4 sentences", "set": { "tier": "boss", "followUpProbes": ["a", "b", "c", "d"] } },
+  { "name": "learn code", "set": { "learn": "A05" } },
+  { "name": "source type and evidence", "set": { "source": { "label": "x", "url": "https://example.com", "type": "authored", "evidence": "A" } } },
+  { "name": "every source type", "set": { "source": { "label": "x", "url": "https://example.com", "type": "job-description", "evidence": "D" } } }
+ ],
+ "invalid": [
+  { "name": "old topic evaluation", "set": { "topic": "evaluation" } },
+  { "name": "old topic inference-gpu", "set": { "topic": "inference-gpu" } },
+  { "name": "secondaryTopics contains own topic", "set": { "secondaryTopics": ["rag"] } },
+  { "name": "secondaryTopics unknown slug", "set": { "secondaryTopics": ["evaluation"] } },
+  { "name": "secondaryTopics academy", "set": { "secondaryTopics": ["academy"] } },
+  { "name": "secondaryTopics not a list", "set": { "secondaryTopics": "embeddings-ranking" } },
+  { "name": "assessedSkills n too big", "set": { "assessedSkills": ["rag.mechanism.7"] } },
+  { "name": "assessedSkills n zero", "set": { "assessedSkills": ["rag.mechanism.0"] } },
+  { "name": "assessedSkills bad tier", "set": { "assessedSkills": ["rag.expert.1"] } },
+  { "name": "assessedSkills old topic", "set": { "assessedSkills": ["evaluation.mechanism.1"] } },
+  { "name": "assessedSkills missing n", "set": { "assessedSkills": ["rag.mechanism"] } },
+  { "name": "assessedSkills not a list", "set": { "assessedSkills": "rag.mechanism.2" } },
+  { "name": "three critical", "set": { "keyPoints": [{ "text": "a", "critical": true }, { "text": "b", "critical": true }, { "text": "c", "critical": true }, "d"] } },
+  { "name": "critical with only two key points", "set": { "keyPoints": [{ "text": "a", "critical": true }, "b"] } },
+  { "name": "remediationLevel expert", "set": { "keyPoints": [{ "text": "a", "remediationLevel": "expert" }, "b", "c"] } },
+  { "name": "key point object unknown field", "set": { "keyPoints": [{ "text": "a", "weight": 3 }, "b", "c"] } },
+  { "name": "key point object blank text", "set": { "keyPoints": [{ "text": " " }, "b", "c"] } },
+  { "name": "key point object without text", "set": { "keyPoints": [{ "critical": true }, "b", "c"] } },
+  { "name": "critical not a bool", "set": { "keyPoints": [{ "text": "a", "critical": "yes" }, "b", "c"] } },
+  { "name": "key point is a number", "set": { "keyPoints": [1, "b", "c"] } },
+  { "name": "followUpProbes only one", "set": { "tier": "boss", "followUpProbes": ["a"] } },
+  { "name": "followUpProbes five", "set": { "tier": "boss", "followUpProbes": ["a", "b", "c", "d", "e"] } },
+  { "name": "followUpProbes blank", "set": { "tier": "boss", "followUpProbes": ["a", " "] } },
+  { "name": "learn lowercase", "set": { "learn": "a05" } },
+  { "name": "learn one digit", "set": { "learn": "A5" } },
+  { "name": "learn three digits", "set": { "learn": "A055" } },
+  { "name": "source type unknown", "set": { "source": { "label": "x", "url": "https://example.com", "type": "blog" } } },
+  { "name": "source evidence E", "set": { "source": { "label": "x", "url": "https://example.com", "evidence": "E" } } },
+  { "name": "source evidence lowercase", "set": { "source": { "label": "x", "url": "https://example.com", "evidence": "a" } } },
+  { "name": "source unknown field", "set": { "source": { "label": "x", "url": "https://example.com", "year": 2026 } } }
+ ],
+ "topicFiles": {
+  "valid": [
+   { "name": "status only", "topic": "rag", "data": { "status": "todo" } },
+   { "name": "status and learn", "topic": "agents", "data": { "status": "done", "learn": "A05" } }
+  ],
+  "invalid": [
+   { "name": "old intros", "topic": "rag", "data": { "status": "todo", "intros": { "concept": { "title": "t", "body": "b" } } } },
+   { "name": "old i18n", "topic": "rag", "data": { "status": "todo", "i18n": {} } },
+   { "name": "bad learn", "topic": "rag", "data": { "status": "todo", "learn": "a05" } },
+   { "name": "missing status", "topic": "rag", "data": {} },
+   { "name": "bad status", "topic": "rag", "data": { "status": "ready" } },
+   { "name": "old topic file name", "topic": "evaluation", "data": { "status": "todo" } },
+   { "name": "academy has no topic file", "topic": "academy", "data": { "status": "todo" } }
+  ]
+ }
+}

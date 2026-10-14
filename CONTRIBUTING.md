@@ -136,15 +136,19 @@ Behavioral:
 | Field | Meaning |
 | --- | --- |
 | `kind` | `technical` or `behavioral` (`situational` is also allowed, in `behavioral/`). Must match the folder. |
-| `topic` | Technical only. One of the 26 slugs in [Topics](#topics) below. |
+| `topic` | Technical only. One of the 22 station slugs in [Topics](#topics) below, or `academy` (a question that belongs to no station; the app keeps it out of every station). |
+| `secondaryTopics` | Technical only, optional. Station slugs this question also touches. Shown, never scored. Not `academy`, and never the question's own `topic`. |
+| `assessedSkills` | Technical only, optional. Sub-skills from the question blueprint, written `<station>.<tier>.<n>` with `n` from 1 to 6 (for example `rag.mechanism.2`). |
+| `followUpProbes` | Technical only, optional. 2–4 non-blank follow-up sentences the Mock interview may ask. |
+| `learn` | Technical only, optional. An Academy lesson code, a capital letter and two digits (`A05`). |
 | `tier` | Technical only. One of `concept`, `mechanism`, `trade-off`, `boss`. Each topic × tier needs at least 3 questions before the app opens it (fewer is a warning). |
 | `theme` | Behavioral only. One of `conflict`, `failure`, `ownership`, `ambiguity`, `fast-learning`, `influence`. |
 | `leadershipPrinciples` | Behavioral only. A list (can be empty) of Amazon's Leadership Principles, spelled as in `companies/amazon.json`. |
 | `prompt` | The question as asked. Not blank. |
-| `keyPoints` | Technical only. At least one point a good answer covers, written in your own words. |
+| `keyPoints` | Technical only. At least one point a good answer covers, written in your own words. Each is a string, or `{ "text", "critical"?, "remediationLevel"? }`: `critical: true` marks a point the answer must hit (at most 2 per question, and a question with any needs at least 3 key points); `remediationLevel` is the tier (`concept`, `mechanism`, `trade-off`, `boss`) to send the learner back to when the point is missed. |
 | `levels` | `weak`, `adequate` and `strong`: what each kind of answer looks like. All three are required. |
 | `skills` | Technical only. 1–3 names from `skills.json`, no repeats. |
-| `source` | `label` and an `http(s)` `url` for where the question was seen. |
+| `source` | `label` and an `http(s)` `url` for where the question was seen. Optional `type` (`official-guide`, `firsthand-report`, `interviewer-guide`, `book`, `job-description`, `authored`) and `evidence` grade (`A`, `B`, `C`, `D`). |
 | `status` | `todo`, `in_progress`, `done` or `proposed_removal`, same rules as resources. `in_progress` and `done` technical questions need a `page`. |
 | `page` | Technical only. The fixed-answer version for Challenge, see [Page version](#page-version). |
 
@@ -405,61 +409,47 @@ Fix: add a `block` (a metric diff, a config diff) that rules three of them out, 
 
 ### Topics
 
-The `topic` of a technical question, and the file name under `questions/topics/`, is one of these 27 slugs (this is the curriculum order: stage, then left to right).
+The `topic` of a technical question, and the file name under `questions/topics/`, is one of these 22 station slugs (the order here is the app's curriculum order: stage, then left to right). A question may instead use `topic: "academy"`; it is validated the same way but belongs to no station, and there is no topic file for `academy`.
 
-| Slug | Name | Scope |
+| Slug | Name | Zone |
 | --- | --- | --- |
-| `how-models-learn` | How models learn | The intuition of machine learning in plain words: a model as a function with knobs, loss, a step downhill, train / validation / test, overfitting, and what a language model is doing. No formulas and no code; hand calculation uses only the four operations and one decimal place, with everyday examples. |
-| `pytorch-basics` | PyTorch basics | Tensors, autograd, train / eval, no_grad, devices and the five steps of a training loop. Questions must not assume NumPy. No `codefill`. |
-| `math-notation` | Math notation & algebra | Reading the formulas in papers and CS231n in plain words, and the algebra rules that derivations use. |
-| `linear-algebra` | Linear algebra | Vectors, matrix multiplication and shapes, projection, rank, eigendecomposition and SVD intuition; hand calculation stays at 2×2 or 3-D vectors. |
-| `calculus` | Calculus | Derivatives, partial derivatives, gradients, the chain rule and one step of gradient descent; no integration tricks, no long proofs. |
-| `probability-statistics` | Probability & statistics | Conditional probability and Bayes, expectation and variance, common distributions, entropy / cross-entropy / KL, sampling and the intuition of hypothesis tests. |
-| `python-numpy` | Python & NumPy | The Python core, NumPy arrays, vectorization and numerical stability that ML code needs; pandas only at the most basic level. |
-| `ml-fundamentals` | ML fundamentals | The classical model families and the basic moves of training. |
-| `data-generalization` | Data & generalization | Splits, overfitting, leakage, distribution shift, imbalance and metrics, calibration: the evaluation basics of classical ML. |
-| `system-design-basics` | System design I | Building blocks that need no ML: caching, sharding, replication, queues, idempotency, tail latency, rate limiting, consistency, capacity estimates, and the classic design problems those alone can solve. |
-| `deep-learning` | Deep learning & CNN | MLP and backprop, activations, initialization, BatchNorm / LayerNorm, dropout, residuals, CNN and convolution shapes, optimizers, training diagnosis. |
-| `embeddings` | Embeddings | Representation itself: one-hot vs dense, lookup, the distributional hypothesis, contrastive learning, similarity, pooling, transfer learning. |
-| `sequence-models` | Sequence models | The relay of language models: N-gram, feed-forward LM, RNN, LSTM / GRU, seq2seq, and where attention comes from (stops at why attention is needed). |
-| `computer-vision` | Computer vision | Images as tensors, convolution as filtering, then the vision tasks: classification, detection, segmentation, ViT vs CNN, self-supervision. |
-| `classical-vision` | Classical vision | Traditional computer vision: image formation, filtering, features, geometric reconstruction, motion. A hidden topic (see below). |
-| `llm-internals` | LLM internals | How a Transformer language model works inside, from attention to decoding, and how it is pretrained (corpus filtering and dedup, loss spikes). |
-| `fine-tuning` | Post-training | Adapting a pretrained model: fine-tuning and the post-training methods built on it. Not pretraining and not distributed-training infrastructure. |
-| `inference-gpu` | Inference & GPU I | Serving one model on one GPU: prefill / decode, KV cache memory, batching, latency metrics such as TTFT, the basic gains of quantization, latency budgets, single-machine diagnosis. |
-| `inference-gpu-advanced` | Inference & GPU II | Multi-GPU and special hardware: TP / PP / EP and distributed training, MoE serving, disaggregated prefill / decode, SRAM-only chips, quantization engineering (PTQ / QAT, FP8 training), compilers (TensorRT-LLM), large-scale cost and scheduler design. |
-| `multimodal` | Multimodal | Models that combine modalities: speech, vision-language models, robotics and autonomous driving. |
-| `generative-models` | Generative models | What generative models learn (the data distribution), autoencoders and VAE, GAN, diffusion, latent diffusion, conditional generation and its evaluation. No ELBO derivations; text generation is in LLM internals. |
-| `rag` | RAG | Retrieval-augmented generation: retrieval, chunking, and answering from retrieved passages. |
-| `agents` | Agents | LLMs that call tools and act over several steps. |
-| `evaluation` | Evaluation | Measuring LLM systems. |
-| `safety` | Safety | Keeping LLM systems from misbehaving or being misused. |
-| `ai-system-design` | System design II | Architecture of LLM / AI products: gateways, multi-model routing, execution environments (sandboxes) for AI editors and agents, enterprise search, LLM-assisted data pipelines. |
-| `system-design` | System design III | Classic ML system case studies: recommendation, search, ranking, ads, fraud, ETA, marketplace pricing, the self-driving data engine. The slug is older than the name, so it is not `system-design-iii`. |
+| `problem-framing` | Problem Framing & Model Selection | Core ML |
+| `data-leakage` | Data Quality, Features & Leakage | Core ML |
+| `statistics-experimentation` | Statistics & Experimentation | Core ML |
+| `ml-evaluation` | ML Evaluation & Calibration | Core ML |
+| `generalization-drift` | Generalization, Drift & Monitoring | Core ML |
+| `implementation-debugging` | ML Implementation & Debugging | Core ML |
+| `dl-architectures` | Deep Learning Architectures | Core ML |
+| `training-optimization` | Training, Optimization & Debugging | Core ML |
+| `embeddings-ranking` | Embeddings, Similarity & Ranking | Core ML |
+| `ml-system-design` | End-to-End ML System Design | Core ML |
+| `visual-perception` | Visual Recognition & Perception | Vision & Generative |
+| `vision-3d` | 3D Vision, Geometry & Sensors | Vision & Generative (hidden) |
+| `generative-models` | Generative Models | Vision & Generative |
+| `llm-internals` | Transformer & LLM Internals | LLM & Applied AI |
+| `prompt-context` | Prompt & Context Engineering | LLM & Applied AI |
+| `fine-tuning` | Fine-tuning & Post-training | LLM & Applied AI |
+| `inference-serving` | Inference & Serving Performance | LLM & Applied AI |
+| `rag` | RAG & Search Systems | LLM & Applied AI |
+| `agents` | Agents, Tools & Workflows | LLM & Applied AI |
+| `genai-evaluation` | GenAI Evaluation & Reliability | LLM & Applied AI |
+| `ai-security` | AI Security, Safety & Trust | LLM & Applied AI |
+| `multimodal` | Multimodal AI Systems | LLM & Applied AI |
 
-- `python-numpy` and `pytorch-basics` do not use `codefill` pages: the code is the topic itself, so a blank either leaks the answer or tests syntax. `node scripts/check.mjs` reports a `codefill` page in either as an error.
-- `classical-vision` is a *hidden* topic in the app (it only appears on the map once a user has answered one of its questions), but in this repo it is a topic like any other: same file format, same checks.
+- Each station has four tiers (`concept`, `mechanism`, `trade-off`, `boss`); the question blueprint decides what each tier covers.
+- `vision-3d` is a *hidden* station in the app (it only appears on the map once a user has answered one of its questions), but in this repo it is a topic like any other: same file format, same checks.
+- There are no per-topic restrictions on page types: `codefill` is allowed in every station.
 
-### Topic intros
+### Topic files
 
-`questions/topics/<topic>.json` holds the "New idea" card shown before a topic's first question at each tier. The file name is one of the topics above.
+`questions/topics/<topic>.json` is one small file per station. The file name is one of the 22 stations above (not `academy`).
 
 ```json
-{
-  "status": "todo",
-  "intros": {
-    "concept":   { "title": "…", "body": "…" },
-    "mechanism": { "title": "…", "body": "…" },
-    "trade-off": { "title": "…", "body": "…" },
-    "boss":      { "title": "…", "body": "…" }
-  },
-  "i18n": { "zh-Hant": { "concept": { "title": "…", "body": "…" } }, "ja": {} }
-}
+{ "status": "todo", "learn": "A05" }
 ```
 
-- Only `status`, `intros` and `i18n` (optional). All four tiers are required, each with a non-blank `title` and `body`.
-- `i18n` uses the same two locales; under each, only tier names, each `{ "title", "body" }` (either may be left out, neither blank).
-- Status rules are the same as questions. The app shows an intro only when it is `in_progress` or `done`; a topic without one simply skips the card.
+- Only `status` and `learn` (optional, an Academy lesson code like `A05`); any other key is an error.
+- Status rules are the same as questions.
 
 ## Status
 

@@ -18,7 +18,7 @@ if (problems.length > 0) {
 const count = (status) => entries.filter((e) => e.status === status).length;
 const technical = questions.filter((q) => q.kind === "technical").length;
 console.log(
-  `OK: ${entries.length} resources (todo ${count("todo")} · in progress ${count("in_progress")} · done ${count("done")} · proposed removal ${count("proposed_removal")}) · ${skills.length} skills · ${paths.length} paths · ${companies.length} companies · ${questions.length} questions (${technical} technical) · ${topics.length} topic intros`,
+  `OK: ${entries.length} resources (todo ${count("todo")} · in progress ${count("in_progress")} · done ${count("done")} · proposed removal ${count("proposed_removal")}) · ${skills.length} skills · ${paths.length} paths · ${companies.length} companies · ${questions.length} questions (${technical} technical) · ${topics.length} topic files`,
 );
 
 // Not errors: the app simply doesn't open a topic × tier until it has enough questions.
