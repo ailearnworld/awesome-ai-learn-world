@@ -308,6 +308,8 @@ function validateTechnicalExtras(data, at) {
         const m = typeof id === "string" ? ASSESSED_SKILL.exec(id) : null;
         if (!m || !TOPICS.includes(m[1]) || !TIERS.includes(m[2])) {
           problems.push(`${at}: assessedSkills "${id}" must be <station>.<tier>.<1-6>`);
+        } else if (m[1] !== data.topic) {
+          problems.push(`${at}: assessedSkills "${id}" must use the question's own topic (${data.topic})`);
         }
       }
     }
