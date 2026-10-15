@@ -136,8 +136,9 @@ Behavioral:
 | Field | Meaning |
 | --- | --- |
 | `kind` | `technical` or `behavioral` (`situational` is also allowed, in `behavioral/`). Must match the folder. |
-| `topic` | Technical only. One of the 22 station slugs in [Topics](#topics) below, or `academy` (a question that belongs to no station; the app keeps it out of every station). |
+| `topic` | Technical only. One of the 27 station slugs in [Topics](#topics) below, or `academy` (a question that belongs to no station; the app keeps it out of every station). |
 | `secondaryTopics` | Technical only, optional. Station slugs this question also touches. Shown, never scored. Not `academy`, and never the question's own `topic`. |
+| `foundation` | Technical only, optional. `{ "topic", "tier" }`: the question is also served in that foundation station (`linear-algebra`, `calculus`, `probability-statistics`, `python-numpy`, `ml-fundamentals`) at that tier, besides its own `topic`. Never the question's own `topic`. |
 | `assessedSkills` | Technical only, optional. Sub-skills from the question blueprint, written `<station>.<tier>.<n>` with `n` from 1 to 6 (for example `rag.mechanism.2`). |
 | `followUpProbes` | Technical only, optional. 2–4 non-blank follow-up sentences the Mock interview may ask. |
 | `learn` | Technical only, optional. An Academy lesson code, a capital letter and two digits (`A05`). |
@@ -409,7 +410,7 @@ Fix: add a `block` (a metric diff, a config diff) that rules three of them out, 
 
 ### Topics
 
-The `topic` of a technical question, and the file name under `questions/topics/`, is one of these 22 station slugs (the order here is the app's curriculum order: stage, then left to right). A question may instead use `topic: "academy"`; it is validated the same way but belongs to no station, and there is no topic file for `academy`.
+The `topic` of a technical question, and the file name under `questions/topics/`, is one of these 27 station slugs (22 interview stations plus 5 foundation stations; the order here is the app's curriculum order: stage, then left to right). A question may instead use `topic: "academy"`; it is validated the same way but belongs to no station, and there is no topic file for `academy`.
 
 | Slug | Name | Zone |
 | --- | --- | --- |
@@ -419,6 +420,11 @@ The `topic` of a technical question, and the file name under `questions/topics/`
 | `ml-evaluation` | ML Evaluation & Calibration | Core ML |
 | `generalization-drift` | Generalization, Drift & Monitoring | Core ML |
 | `implementation-debugging` | ML Implementation & Debugging | Core ML |
+| `linear-algebra` | Linear Algebra | Foundations |
+| `calculus` | Calculus | Foundations |
+| `probability-statistics` | Probability & Statistics | Foundations |
+| `python-numpy` | Python & NumPy | Foundations |
+| `ml-fundamentals` | ML Fundamentals | Foundations |
 | `dl-architectures` | Deep Learning Architectures | Core ML |
 | `training-optimization` | Training, Optimization & Debugging | Core ML |
 | `embeddings-ranking` | Embeddings, Similarity & Ranking | Core ML |
@@ -438,11 +444,12 @@ The `topic` of a technical question, and the file name under `questions/topics/`
 
 - Each station has four tiers (`concept`, `mechanism`, `trade-off`, `boss`); the question blueprint decides what each tier covers.
 - `vision-3d` is a *hidden* station in the app (it only appears on the map once a user has answered one of its questions), but in this repo it is a topic like any other: same file format, same checks.
+- The five *Foundations* stations hold the old Challenge's math and ML basics. Company interviews don't test them, so the app counts them toward no career and leaves them out of the Final Interview. A question serving in an interview station can also serve in one of them through `foundation`.
 - There are no per-topic restrictions on page types: `codefill` is allowed in every station.
 
 ### Topic files
 
-`questions/topics/<topic>.json` is one small file per station. The file name is one of the 22 stations above (not `academy`).
+`questions/topics/<topic>.json` is one small file per station. The file name is one of the 27 stations above (not `academy`).
 
 ```json
 { "status": "todo", "learn": "A05" }

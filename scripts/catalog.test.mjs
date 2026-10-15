@@ -113,9 +113,19 @@ test("coverage counts technical questions per topic and tier, ignoring proposed 
   ]);
   assert.deepEqual(cov.find((c) => c.topic === "inference-serving" && c.tier === "mechanism"), { topic: "inference-serving", tier: "mechanism", count: 2, page: 0 });
   assert.equal(cov.find((c) => c.topic === "rag" && c.tier === "boss").count, 0);
-  assert.equal(cov.length, 22 * 4);
+  assert.equal(cov.length, 27 * 4);
   assert.ok(!cov.some((c) => c.topic === "academy"), "academy belongs to no station");
   assert.equal(MIN_PER_TIER, 3);
+});
+
+test("coverage counts a question with foundation in its own station and in the foundation station", () => {
+  const cov = questionCoverage([
+    q("a", "technical", technical({ topic: "rag", tier: "boss", foundation: { topic: "calculus", tier: "concept" } })),
+    q("b", "technical", technical({ topic: "calculus", tier: "concept" })),
+  ]);
+  assert.equal(cov.find((c) => c.topic === "rag" && c.tier === "boss").count, 1);
+  assert.equal(cov.find((c) => c.topic === "calculus" && c.tier === "concept").count, 2);
+  assert.equal(cov.find((c) => c.topic === "calculus" && c.tier === "boss").count, 0);
 });
 
 test("loadCatalog reads questions and tolerates a catalog without them", () => {
@@ -399,12 +409,12 @@ test("optionLengthLeaks checks every locale and the shortest-answer tell", () =>
   assert.deepEqual(optionLengthLeaks([clean]), []);
 });
 
-// The 22 stations. The app repo keeps a byte-identical testdata/curriculum-topics.json and its
+// The 27 stations (22 interview + 5 foundation). The app repo keeps a byte-identical testdata/curriculum-topics.json and its
 // Go tests use the same case names; neither repo reads the other's source.
 const CURRICULUM = JSON.parse(readFileSync(new URL("./testdata/curriculum-topics.json", import.meta.url), "utf8")).topics;
 
 test("every curriculum topic is a valid question topic and topic file name", () => {
-  assert.equal(CURRICULUM.length, 22);
+  assert.equal(CURRICULUM.length, 27);
   assert.deepEqual(TOPICS, CURRICULUM);
   const questions = CURRICULUM.map((topic) => q(`q-${topic}`, "technical", technical({ topic })));
   assert.deepEqual(validateQuestions(questions, skills), []);

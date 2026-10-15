@@ -2,6 +2,11 @@
  "topics": [
   "problem-framing",
   "implementation-debugging",
+  "linear-algebra",
+  "calculus",
+  "probability-statistics",
+  "python-numpy",
+  "ml-fundamentals",
   "data-leakage",
   "ml-evaluation",
   "generalization-drift",

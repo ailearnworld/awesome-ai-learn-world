@@ -23,7 +23,10 @@
   { "name": "followUpProbes 4 sentences", "set": { "tier": "boss", "followUpProbes": ["a", "b", "c", "d"] } },
   { "name": "learn code", "set": { "learn": "A05" } },
   { "name": "source type and evidence", "set": { "source": { "label": "x", "url": "https://example.com", "type": "authored", "evidence": "A" } } },
-  { "name": "every source type", "set": { "source": { "label": "x", "url": "https://example.com", "type": "job-description", "evidence": "D" } } }
+  { "name": "every source type", "set": { "source": { "label": "x", "url": "https://example.com", "type": "job-description", "evidence": "D" } } },
+  { "name": "topic foundation station", "set": { "topic": "linear-algebra" } },
+  { "name": "foundation", "set": { "foundation": { "topic": "linear-algebra", "tier": "concept" } } },
+  { "name": "foundation on a foundation question", "set": { "topic": "calculus", "foundation": { "topic": "ml-fundamentals", "tier": "boss" } } }
  ],
  "invalid": [
   { "name": "old topic evaluation", "set": { "topic": "evaluation" } },
@@ -57,12 +60,23 @@
   { "name": "source type unknown", "set": { "source": { "label": "x", "url": "https://example.com", "type": "blog" } } },
   { "name": "source evidence E", "set": { "source": { "label": "x", "url": "https://example.com", "evidence": "E" } } },
   { "name": "source evidence lowercase", "set": { "source": { "label": "x", "url": "https://example.com", "evidence": "a" } } },
-  { "name": "source unknown field", "set": { "source": { "label": "x", "url": "https://example.com", "year": 2026 } } }
+  { "name": "source unknown field", "set": { "source": { "label": "x", "url": "https://example.com", "year": 2026 } } },
+  { "name": "foundation topic is an interview station", "set": { "foundation": { "topic": "agents", "tier": "concept" } } },
+  { "name": "foundation topic academy", "set": { "foundation": { "topic": "academy", "tier": "concept" } } },
+  { "name": "foundation topic unknown", "set": { "foundation": { "topic": "linear-algebra-2", "tier": "concept" } } },
+  { "name": "foundation own topic", "set": { "topic": "calculus", "foundation": { "topic": "calculus", "tier": "boss" } } },
+  { "name": "foundation tier unknown", "set": { "foundation": { "topic": "calculus", "tier": "expert" } } },
+  { "name": "foundation missing tier", "set": { "foundation": { "topic": "calculus" } } },
+  { "name": "foundation unknown field", "set": { "foundation": { "topic": "calculus", "tier": "boss", "weight": 1 } } },
+  { "name": "foundation key wrong case", "set": { "foundation": { "Topic": "calculus", "tier": "boss" } } },
+  { "name": "foundation not an object", "set": { "foundation": "calculus" } },
+  { "name": "foundation null", "set": { "foundation": null } }
  ],
  "topicFiles": {
   "valid": [
    { "name": "status only", "topic": "rag", "data": { "status": "todo" } },
-   { "name": "status and learn", "topic": "agents", "data": { "status": "done", "learn": "A05" } }
+   { "name": "status and learn", "topic": "agents", "data": { "status": "done", "learn": "A05" } },
+   { "name": "foundation station", "topic": "calculus", "data": { "status": "in_progress" } }
   ],
   "invalid": [
    { "name": "old intros", "topic": "rag", "data": { "status": "todo", "intros": { "concept": { "title": "t", "body": "b" } } } },

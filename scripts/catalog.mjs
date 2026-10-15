@@ -46,10 +46,15 @@ const STAGE_KEYS = ["title", "passCriteria", "resources", "extras"];
 // questions/technical/*.json and questions/behavioral/*.json: interview questions (app spec
 // 2026-10-05-interview-and-challenge-design.md §4.3). Same lists as the app's format.go.
 export const QUESTION_KINDS = ["technical", "behavioral", "situational"];
-// The 22 interview stations, in curriculum order (stage, then left to right). Same list as the app's
-// QuestionTopics (backend/internal/catalog/curriculum.go). Topic files (questions/topics/*.json) exist only for these.
+// The foundation stations (stage 2): the old Challenge's math and ML basics, back on the map with their
+// old questions. Not counted toward any career or the Final Interview. Same list as the app's FoundationTopics.
+export const FOUNDATION_TOPICS = ["linear-algebra", "calculus", "probability-statistics", "python-numpy", "ml-fundamentals"];
+// The 22 interview stations plus the 5 foundation stations, in curriculum order (stage, then left to right).
+// Same list as the app's QuestionTopics (backend/internal/catalog/curriculum.go). Topic files
+// (questions/topics/*.json) exist only for these.
 export const TOPICS = [
-  "problem-framing", "implementation-debugging", "data-leakage", "ml-evaluation", "generalization-drift",
+  "problem-framing", "implementation-debugging", ...FOUNDATION_TOPICS,
+  "data-leakage", "ml-evaluation", "generalization-drift",
   "statistics-experimentation", "dl-architectures", "training-optimization", "embeddings-ranking",
   "ml-system-design", "visual-perception", "vision-3d", "generative-models", "llm-internals", "fine-tuning",
   "inference-serving", "prompt-context", "rag", "agents", "genai-evaluation", "ai-security", "multimodal",
@@ -70,7 +75,7 @@ export const LEADERSHIP_PRINCIPLES = [
 export const MIN_PER_TIER = 3;
 const TECHNICAL_KEYS = new Set([
   "kind", "topic", "tier", "prompt", "keyPoints", "levels", "skills", "source", "status", "page",
-  "secondaryTopics", "assessedSkills", "followUpProbes", "learn",
+  "secondaryTopics", "assessedSkills", "followUpProbes", "learn", "foundation",
 ]);
 const BEHAVIORAL_KEYS = new Set(["kind", "theme", "leadershipPrinciples", "prompt", "levels", "source", "status"]);
 const LEVEL_KEYS = ["weak", "adequate", "strong"];
@@ -287,9 +292,22 @@ function validateKeyPoints(keyPoints, at) {
   return problems;
 }
 
-/** secondaryTopics, assessedSkills, followUpProbes, learn: all optional. */
+const FOUNDATION_KEYS = ["topic", "tier"];
+
+/** secondaryTopics, assessedSkills, followUpProbes, learn, foundation: all optional. */
 function validateTechnicalExtras(data, at) {
   const problems = [];
+  if (Object.hasOwn(data, "foundation")) {
+    const f = data.foundation;
+    if (!isObject(f)) problems.push(`${at}: foundation must be { topic, tier }`);
+    else {
+      const extra = Object.keys(f).filter((k) => !FOUNDATION_KEYS.includes(k));
+      if (extra.length) problems.push(`${at}: unknown foundation field(s) ${extra.join(", ")}`);
+      if (!FOUNDATION_TOPICS.includes(f.topic)) problems.push(`${at}: foundation.topic must be a foundation station (${FOUNDATION_TOPICS.join(", ")})`);
+      else if (f.topic === data.topic) problems.push(`${at}: foundation.topic must not be the question's own topic`);
+      if (!TIERS.includes(f.tier)) problems.push(`${at}: foundation.tier must be one of ${TIERS.join(", ")}`);
+    }
+  }
   if (Object.hasOwn(data, "secondaryTopics")) {
     const st = data.secondaryTopics;
     if (!Array.isArray(st)) problems.push(`${at}: secondaryTopics must be a list of station slugs`);
@@ -767,10 +785,11 @@ export function questionCoverage(questions) {
   const out = [];
   for (const topic of TOPICS) {
     for (const tier of TIERS) {
-      const count = questions.filter(
-        (q) => q.kind === "technical" && q.topic === topic && q.tier === tier && q.status !== "proposed_removal",
-      ).length;
-      const page = questions.filter((q) => pageUsable(q) && q.topic === topic && q.tier === tier).length;
+      // A question with `foundation` is served in that foundation station too (the app's QuestionBank).
+      const here = (q) => (q.topic === topic && q.tier === tier) ||
+        (isObject(q.foundation) && q.foundation.topic === topic && q.foundation.tier === tier);
+      const count = questions.filter((q) => q.kind === "technical" && here(q) && q.status !== "proposed_removal").length;
+      const page = questions.filter((q) => pageUsable(q) && here(q)).length;
       out.push({ topic, tier, count, page });
     }
   }
