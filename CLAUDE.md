@@ -3,7 +3,7 @@
 Instructions for AI assistants (Claude Code, Codex…) editing this repository.
 The maintainer writes in Traditional Chinese; reply in Traditional Chinese.
 
-This is the public catalog behind [AI Learning World](https://ailearnworld.com).
+This is the public catalog behind [AI Learn World](https://ailearnworld.com).
 The app syncs a pinned **tag** of this repo into its database on release — what is
 merged here reaches users only after a tag and a release.
 

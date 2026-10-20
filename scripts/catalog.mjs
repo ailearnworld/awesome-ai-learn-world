@@ -1,7 +1,7 @@
 // Load and validate skills.json, resources/*.json and paths/*.json.
 //
 // These rules mirror the app's importer (backend/internal/catalog/format.go in the
-// AI Learning World app). The app re-validates everything before it syncs, so a file
+// AI Learn World app). The app re-validates everything before it syncs, so a file
 // that passes here but fails there is a bug in one of the two: change them together.
 
 import { existsSync, readdirSync, readFileSync } from "node:fs";

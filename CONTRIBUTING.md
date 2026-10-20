@@ -43,8 +43,8 @@ A resource is listed only if it meets **all** of these:
 | `durationMinutes` | only if the official page states it; otherwise `0` (unknown). **Never estimate.** |
 | `skills` | what it teaches: 1–3 names from [`skills.json`](skills.json), e.g. `Deep Learning`. Skills are topics, not tools — a PyTorch tutorial is `Deep Learning`. Need a skill that isn't listed? Propose it in the pull request. |
 | `tags` | optional labels: `intro` (a no-code introduction) · `classic` (the classic technical methods). Leave it out if neither fits. |
-| `links` | optional: other official links besides `url`, for example the GitHub repo when `url` is the course website. Full URLs, up to 8. Shown next to the homepage link on AI Learning World. |
-| `nextCohort` | optional, for courses that run in cohorts: the next start date as `YYYY-MM-DD`, from the official page. Leave it out when unknown. AI Learning World reminds learners before it starts. |
+| `links` | optional: other official links besides `url`, for example the GitHub repo when `url` is the course website. Full URLs, up to 8. Shown next to the homepage link on AI Learn World. |
+| `nextCohort` | optional, for courses that run in cohorts: the next start date as `YYYY-MM-DD`, from the official page. Leave it out when unknown. AI Learn World reminds learners before it starts. |
 | `units` | courses only: the lectures, each with its `resources` (the video, the paper that goes with it…) |
 
 3. Run the checks and regenerate the README:
@@ -76,7 +76,7 @@ A path is a ready-made route through the catalog: `paths/<slug>.json`, a list of
 }
 ```
 
-`resources` are file names from `resources/` without `.json`. Only `"kind": "resource"` entries can be on a path. `passCriteria` is optional. `color` is optional: one of `green`, `teal`, `blue`, `purple`, `rose`, `red`, `orange`, `slate`, `gold`, `cyan`, `brown`, `indigo` (leave it out for neutral gray). On AI Learning World each stage becomes a group on the board, laid out left to right.
+`resources` are file names from `resources/` without `.json`. Only `"kind": "resource"` entries can be on a path. `passCriteria` is optional. `color` is optional: one of `green`, `teal`, `blue`, `purple`, `rose`, `red`, `orange`, `slate`, `gold`, `cyan`, `brown`, `indigo` (leave it out for neutral gray). On AI Learn World each stage becomes a group on the board, laid out left to right.
 
 ## Interview questions
 
