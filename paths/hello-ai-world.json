@@ -5,7 +5,7 @@
   "domains": [
     {
       "title": "Programming",
-      "color": "slate",
+      "color": "cyan",
       "outline": true,
       "stages": [
         {
@@ -37,7 +37,7 @@
     },
     {
       "title": "Math",
-      "color": "slate",
+      "color": "orange",
       "outline": true,
       "stages": [
         {
@@ -82,7 +82,7 @@
     },
     {
       "title": "Deep Learning",
-      "color": "teal",
+      "color": "gold",
       "outline": true,
       "stages": [
         {
@@ -129,7 +129,7 @@
     },
     {
       "title": "Large Language Models",
-      "color": "rose",
+      "color": "orange",
       "outline": true,
       "stages": [
         {
@@ -164,7 +164,7 @@
     },
     {
       "title": "ML Systems",
-      "color": "orange",
+      "color": "teal",
       "outline": true,
       "stages": [
         {
@@ -199,7 +199,7 @@
     },
     {
       "title": "Computer Vision",
-      "color": "red",
+      "color": "rose",
       "outline": true,
       "stages": [
         {
